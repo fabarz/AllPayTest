@@ -14,14 +14,15 @@ namespace LightsTest
 {
     public partial class frmMain : Form
     {
-        private LightsGame game = new LightsGame(5, 10);
+        private LightsGame game;
 
         public frmMain()
         {
             InitializeComponent();
+
+            Reset();
+
             pnlTop.Paint += PnlTop_Paint;
-            game.LightChangedEvent += Game_LightChangedEvent;
-            game.GameWonEvent += Game_GameWonEvent;
         }
 
         private void Game_GameWonEvent()
@@ -41,7 +42,20 @@ namespace LightsTest
 
         private void btnReset_Click(object sender, EventArgs e)
         {
-            game.Reset();
+            Reset();
+        }
+
+        private void Reset()
+        {
+            if (game != null)
+            {
+                game.LightChangedEvent -= Game_LightChangedEvent;
+                game.GameWonEvent -= Game_GameWonEvent;
+            }
+            game = new LightsGame((int)numericUpDown1.Value, 40);
+            game.LightChangedEvent += Game_LightChangedEvent;
+            game.GameWonEvent += Game_GameWonEvent;
+            lblMoveNumer.Text = game.MoveNumber.ToString();
             pnlTop.Invalidate();
         }
 
@@ -53,6 +67,7 @@ namespace LightsTest
             Point p = game.PixelToPoint(pnlTop.Width, pnlTop.Height, X, Y);
             Debug.WriteLine($"Clicked X:{X} Y:{Y} => {p.X} {p.Y}");
             game.Toggle(p);
+            lblMoveNumer.Text = game.MoveNumber.ToString();
             pnlTop.Invalidate();
         }
 

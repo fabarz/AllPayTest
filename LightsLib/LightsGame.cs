@@ -19,10 +19,19 @@ namespace LightsLib
         private Dictionary<Point, Light> AllLights;
 
         public int Size { get; private set; }
+
+        /// <summary>
+        /// Percent of lights to turn on at initialization
+        /// </summary>
         public int PercentOn { get; private set; }
 
         public bool GameOver { get; private set; }
+        public int MoveNumber { get; private set; }
 
+        /// <summary>
+        /// This is used as adjacent cells for lights at the border of the board
+        /// where an adjacent cell would be outside of the board.
+        /// </summary>
         private Light DummyLight;
 
         public LightsGame(int size, int percentOn)
@@ -36,15 +45,20 @@ namespace LightsLib
 
         public void Reset()
         {
-            CreateNewSetOfLights();
+            NewGame();
+            //There must be at least one light on otherwise geme is not valid.
             while(NoLightIsOn())
             {
-                CreateNewSetOfLights();
+                NewGame();
             }
         }
 
-        public void CreateNewSetOfLights()
+        /// <summary>
+        /// Generate a new set of lights.
+        /// </summary>
+        public void NewGame()
         {
+            MoveNumber = 0;
             GameOver = false;
             for (int k = 0; k < Size; k++)
             {
@@ -64,94 +78,135 @@ namespace LightsLib
             }
         }
 
+        /// <summary>
+        /// Return true if no lights are on.
+        /// </summary>
+        /// <returns></returns>
         public bool NoLightIsOn()
         {
-            foreach(var x in AllLights)
-            {
-                if (x.Value.IsOn && !x.Value.IsDummy)
-                {
-                    return false;
-                }
-            }            
-            return true;
+            return AllLights.All(x => !x.Value.IsOn && !x.Value.IsDummy);
         }
 
-        public void Toggle(Point p)
+        /// <summary>
+        /// Toggle a light cell and it's adjacent ones.
+        /// </summary>
+        /// <param name="p"></param>
+        public bool Toggle(Point p)
         {
             if (GameOver)
             {
-                return;
+                return false;
             }
-            foreach(var x in AllLights)
+            foreach(var x in AllLights.Values)
             {
-                x.Value.JustToggled = false;
+                x.JustToggled = false;
             }
-            GetLight(p).Toggle(propagate: true);
-            GameOver = NoLightIsOn();
-            if (GameOver && GameWonEvent != null)
+            bool ret = GetLight(p).Toggle(propagate: true);
+            if (ret)
             {
-                GameWonEvent.Invoke();
+                MoveNumber++;
+                GameOver = NoLightIsOn();
+                if (GameOver)
+                {
+                    GameWonEvent?.Invoke();
+                }
             }
+            return ret;
         }
 
-        public Point PixelToPoint(int w, int h, int x1, int y1)
+        /// <summary>
+        /// Convert a pixel on a canvas to a Point.
+        /// </summary>
+        /// <param name="canvasWidth"></param>
+        /// <param name="canvasHeight"></param>
+        /// <param name="pixelX"></param>
+        /// <param name="pixelY"></param>
+        /// <returns>A Point</returns>
+        public Point PixelToPoint(int canvasWidth, int canvasHeight, int pixelX, int pixelY)
         {
-            int x = (int)(((decimal)x1 / w) * Size);
-            int y = (int)(((decimal)y1 / h) * Size);
+            int x = (int)(((decimal)pixelX / canvasWidth) * Size);
+            int y = (int)(((decimal)pixelY / canvasHeight) * Size);
             return new Point(x, y);
         }
 
+        /// <summary>
+        /// Fire light changed event.
+        /// </summary>
+        /// <param name="light"></param>
         private void LightsGame_LightChangedEvent(Light light)
         {
-            if (LightChangedEvent != null)
-            {
-                LightChangedEvent.Invoke(light);
-            }
+            LightChangedEvent?.Invoke(light);
         }
 
+        /// <summary>
+        /// Retrieve light object
+        /// </summary>
+        /// <param name="location"></param>
+        /// <returns></returns>
         public Light GetLight(Point location)
         {
-            if (AllLights.ContainsKey(location))
-            {
-                return AllLights[location];
-            }
-            return DummyLight;
+            return AllLights.ContainsKey(location) ? AllLights[location] : DummyLight;
         }
 
-        public bool Equals(Point x, Point y)
+        /// <summary>
+        /// Compare a point to another point
+        /// </summary>
+        /// <param name="point1"></param>
+        /// <param name="point2"></param>
+        /// <returns>True if both point to the same cell</returns>
+        public bool Equals(Point point1, Point point2)
         {
-            return x.X == y.X && x.Y == y.Y;
+            return point1.X == point2.X && point1.Y == point2.Y;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>Unique value for each point</returns>
         public int GetHashCode(Point obj)
         {
             return obj.X + (obj.Y * Size);
         }
 
-        private int IndexToPixel(int x, int max)
+        /// <summary>
+        /// Convert index of cell to pixel number on a ruler
+        /// </summary>
+        /// <param name="idx"></param>
+        /// <param name="maxPixels"></param>
+        /// <returns></returns>
+        private int IndexToPixel(int idx, int maxPixels)
         {   
-            return (int)(x * (decimal) max / Size) - 1;
+            return (int)(idx * (decimal) maxPixels / Size) - 1;
         }
 
+        /// <summary>
+        /// Draw the game on a Graphics
+        /// </summary>
+        /// <param name="gr"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
         public void DrawOn(Graphics gr, int w, int h)
         {
             gr.ResetClip();
             var pen = new Pen(Color.Black, 2);
             if (GameOver)
             {
-                gr.FillRectangle(new SolidBrush(Color.Black), new Rectangle(1, 1, w - 2, h - 2));
+                DrawBlackBoard(gr, w, h);
                 return;
             }
-            //Draw border
-            gr.DrawRectangle(pen, new Rectangle(1, 1, w - 2, h - 2));
-            //Draw grid
-            for(int num = 1; num < Size; num++)
-            {
-                //Vertical line
-                gr.DrawLine(pen, new Point(IndexToPixel(num, w), 1), new Point(IndexToPixel(num, w), h - 1));
-                //Horizontal line
-                gr.DrawLine(pen, new Point(1, IndexToPixel(num, h)), new Point(w - 1, IndexToPixel(num, h)));
-            }
+            DrawGrid(gr, w, h, pen);
+            DrawLights(gr, w, h);
+        }
+
+        private static void DrawBlackBoard(Graphics gr, int w, int h)
+        {
+            //Show black board.
+            gr.FillRectangle(new SolidBrush(Color.Black), new Rectangle(1, 1, w - 2, h - 2));
+        }
+
+        private void DrawLights(Graphics gr, int w, int h)
+        {
             //Draw lights
             for (int x = 0; x < Size; x++)
             {
@@ -167,7 +222,7 @@ namespace LightsLib
                         int w1 = IndexToPixel(1, w);
                         int h1 = IndexToPixel(1, h);
                         gr.FillRectangle(new SolidBrush(Color.Lime), new Rectangle(
-                            x1, y1, w1, h1) 
+                            x1, y1, w1, h1)
                             );
                     }
                     if (l1.JustToggled)
@@ -176,6 +231,20 @@ namespace LightsLib
                         gr.DrawString("O", new Font("Arial", 10), new SolidBrush(Color.Black), new PointF(IndexToPixel(x, w) + IndexToPixel(1, w) / 2, IndexToPixel(y, h) + IndexToPixel(1, h) / 2));
                     }
                 }
+            }
+        }
+
+        private void DrawGrid(Graphics gr, int w, int h, Pen pen)
+        {
+            //Draw border
+            gr.DrawRectangle(pen, new Rectangle(1, 1, w - 2, h - 2));
+            //Draw grid
+            for (int num = 1; num < Size; num++)
+            {
+                //Vertical line
+                gr.DrawLine(pen, new Point(IndexToPixel(num, w), 1), new Point(IndexToPixel(num, w), h - 1));
+                //Horizontal line
+                gr.DrawLine(pen, new Point(1, IndexToPixel(num, h)), new Point(w - 1, IndexToPixel(num, h)));
             }
         }
     }

@@ -13,11 +13,20 @@ namespace LightsLib
 
         public event LightChanged LightChangedEvent;
 
+        /// <summary>
+        /// When this is true, this cell is used as adjacent cells for lights at the border of the board
+        /// where an adjacent cell would be outside of the board.
+        /// </summary>
         public bool IsDummy { get; private set; }
+
         public bool IsOn { get; private set; }
         public Point Location { get; private set; }
         private List<Light> adjacentLights = new List<Light>();
         private static Random s_Random = new Random();
+
+        /// <summary>
+        /// Light was toggled by the last move.
+        /// </summary>
         public bool JustToggled { get; set; }
 
         public Light(Point location, int rndPercent, bool isDummy = false)
@@ -28,11 +37,11 @@ namespace LightsLib
             Location = location;
         }
 
-        public void Toggle(bool propagate)
+        public bool Toggle(bool propagate)
         {
             if (IsDummy)
             {
-                return;
+                return false;
             }
             IsOn = !IsOn;
             JustToggled = true;
@@ -40,10 +49,8 @@ namespace LightsLib
             {
                 adjacentLights.ForEach(x => x.Toggle(propagate: false));
             }
-            if (LightChangedEvent != null)
-            {
-                LightChangedEvent.Invoke(this);
-            }
+            LightChangedEvent?.Invoke(this);
+            return true;
         }
 
         internal void SaveAdjacentLights(LightsGame game)
