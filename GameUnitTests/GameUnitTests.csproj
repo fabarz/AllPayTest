@@ -55,7 +55,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\LightsLib\LightsLib.csproj">
+    <ProjectReference Include="..\LightsLib\LightsLib.csproj">
       <Project>{559366dc-e46a-4f3e-a53c-be8c7ebade55}</Project>
       <Name>LightsLib</Name>
     </ProjectReference>

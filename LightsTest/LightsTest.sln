@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightsTest", "LightsTest.cs
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightsLib", "..\LightsLib\LightsLib.csproj", "{559366DC-E46A-4F3E-A53C-BE8C7EBADE55}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameUnitTests", "GameUnitTests\GameUnitTests.csproj", "{F8EE0DC3-1FDF-412D-B766-F10A27488988}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameUnitTests", "..\GameUnitTests\GameUnitTests.csproj", "{F8EE0DC3-1FDF-412D-B766-F10A27488988}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
